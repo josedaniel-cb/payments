@@ -1,6 +1,3 @@
-# Copyright (c) 2017, Frappe Technologies and contributors
-# License: MIT. See LICENSE
-
 from urllib.parse import urlencode
 
 import frappe
@@ -33,6 +30,10 @@ class IzipaySettings(Document):
         super().__init__(*args, **kwargs)
 
     def on_update(self):
+        """
+        Called when the document is updated. Creates a payment gateway and calls the hook method
+        'payment_gateway_enabled'. Validates the Izipay credentials if mandatory fields are not ignored.
+        """
         create_payment_gateway(
             "Izipay-" + self.gateway_name,
             settings="Izipay Settings",
@@ -43,6 +44,10 @@ class IzipaySettings(Document):
             self.validate_stripe_credentails()
 
     def validate_stripe_credentails(self):
+        """
+        Validates the Izipay credentials by making a GET request to the Izipay API.
+        Throws an exception if the credentials are invalid.
+        """
         if self.publishable_key and self.secret_key:
             header = {
                 "Authorization": "Bearer {}".format(
@@ -55,6 +60,13 @@ class IzipaySettings(Document):
                 frappe.throw(_("Seems Publishable Key or Secret Key is wrong !!!"))
 
     def validate_transaction_currency(self, currency):
+        """
+        Validates if the given currency is supported by Izipay.
+        Throws an exception if the currency is not supported.
+
+        Args:
+            currency (str): The currency to validate.
+        """
         if currency not in self.supported_currencies:
             frappe.throw(
                 _(
@@ -63,6 +75,14 @@ class IzipaySettings(Document):
             )
 
     def validate_minimum_transaction_amount(self, currency, amount):
+        """
+        Validates if the transaction amount meets the minimum charge amount for the given currency.
+        Throws an exception if the amount is less than the minimum required.
+
+        Args:
+            currency (str): The currency of the transaction.
+            amount (float): The transaction amount.
+        """
         if currency in self.currency_wise_minimum_charge_amount:
             if flt(amount) < self.currency_wise_minimum_charge_amount.get(currency, 0.0):
                 frappe.throw(
@@ -72,9 +92,24 @@ class IzipaySettings(Document):
                 )
 
     def get_payment_url(self, **kwargs):
+        """
+        Generates the payment URL with the given parameters.
+
+        Returns:
+            str: The payment URL.
+        """
         return get_url(f"./stripe_checkout?{urlencode(kwargs)}")
 
     def create_request(self, data):
+        """
+        Creates a payment request to Izipay.
+
+        Args:
+            data (dict): The payment data.
+
+        Returns:
+            dict: The response containing the redirect URL and status.
+        """
         import stripe
 
         self.data = frappe._dict(data)
@@ -98,6 +133,12 @@ class IzipaySettings(Document):
             }
 
     def create_charge_on_stripe(self):
+        """
+        Creates a charge on Izipay using the payment data.
+
+        Returns:
+            dict: The response containing the redirect URL and status.
+        """
         import stripe
 
         try:
@@ -122,6 +163,12 @@ class IzipaySettings(Document):
         return self.finalize_request()
 
     def finalize_request(self):
+        """
+        Finalizes the payment request and generates the redirect URL based on the payment status.
+
+        Returns:
+            dict: The response containing the redirect URL and status.
+        """
         redirect_to = self.data.get("redirect_to") or None
         redirect_message = self.data.get("redirect_message") or None
         status = self.integration_request.status
@@ -162,6 +209,16 @@ class IzipaySettings(Document):
 
 
 def get_gateway_controller(doctype, docname):
+    """
+    Retrieves the gateway controller for the given document.
+
+    Args:
+        doctype (str): The document type.
+        docname (str): The document name.
+
+    Returns:
+        str: The gateway controller.
+    """
     reference_doc = frappe.get_doc(doctype, docname)
     gateway_controller = frappe.db.get_value(
         "Payment Gateway", reference_doc.payment_gateway, "gateway_controller"
