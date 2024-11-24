@@ -16,10 +16,12 @@ from payments.payment_gateways.doctype.izipay_settings.payment_gateway_controlle
 class IzipaySettings(Document, PaymentGatewayController):
     supported_currencies = [
         "PEN",
+        "USD",
     ]
 
     currency_wise_minimum_charge_amount = {
         "PEN": 1,
+        "USD": 1,
     }
 
     def __init__(self, *args, **kwargs):
@@ -45,7 +47,7 @@ class IzipaySettings(Document, PaymentGatewayController):
         )
         call_hook_method("payment_gateway_enabled", gateway="Izipay-" + self.gateway_name)
         if not self.flags.ignore_mandatory:
-            self.validate_stripe_credentials()
+            self.validate_izipay_credentials()
 
     def validate_transaction_currency(self, currency: str):
         if currency not in self.supported_currencies:
@@ -67,21 +69,24 @@ class IzipaySettings(Document, PaymentGatewayController):
     def get_payment_url(self, **kwargs) -> str:
         return get_url(f"./stripe_checkout?{urlencode(kwargs)}")
 
-    def validate_stripe_credentials(self):
-        """
-        Validates the Izipay credentials by making a GET request to the Izipay API.
-        Throws an exception if the credentials are invalid.
-        """
-        if self.publishable_key and self.secret_key:
-            header = {
-                "Authorization": "Bearer {}".format(
-                    self.get_password(fieldname="secret_key", raise_exception=False)
-                )
-            }
-            try:
-                make_get_request(url="https://api.stripe.com/v1/charges", headers=header)
-            except Exception:
-                frappe.throw(_("Seems Publishable Key or Secret Key is wrong !!!"))
+    def validate_izipay_credentials(self):
+        # """
+        # Validates the Izipay credentials by making a GET request to the Izipay API.
+        # Throws an exception if the credentials are invalid.
+        # """
+        # if self.publishable_key and self.secret_key:
+        #     header = {
+        #         "Authorization": "Bearer {}".format(
+        #             self.get_password(fieldname="secret_key", raise_exception=False)
+        #         )
+        #     }
+        #     try:
+        #         make_get_request(url="https://api.stripe.com/v1/charges", headers=header)
+        #     except Exception:
+        #         frappe.throw(_("Seems Publishable Key or Secret Key is wrong !!!"))
+
+        # TODO: Implement this method
+        pass
 
     def create_request(self, data):
         """

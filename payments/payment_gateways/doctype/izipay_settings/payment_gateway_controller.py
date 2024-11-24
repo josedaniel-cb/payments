@@ -5,12 +5,14 @@ from typing import Any
 class PaymentGatewayController(ABC):
     """Abstract base class defining the interface for payment gateway controllers.
 
-    This interface defines the required methods by `erpnext/accounts/doctype/payment_request/payment_request.py`.
+    This interface defines the methods required by
+    `erpnext/accounts/doctype/payment_request/payment_request.py`.
     """
 
     @abstractmethod
     def validate_transaction_currency(self, currency: str) -> None:
-        """Validate if the transaction currency is supported.
+        """This method is used to check if the given currency is supported by the payment gateway.
+        If the currency is not supported, it raises an exception.
 
         Args:
             currency: The currency code to validate
@@ -21,7 +23,8 @@ class PaymentGatewayController(ABC):
 
     @abstractmethod
     def get_payment_url(self, **kwargs) -> str:
-        """Get the URL where the customer should be redirected for payment.
+        """This method generates and returns the URL to which the user should be redirected to
+        complete the payment. It typically includes necessary parameters for the payment gateway.
 
         Args:
             **kwargs: Payment details including:
@@ -40,7 +43,8 @@ class PaymentGatewayController(ABC):
         """
 
     def validate_minimum_transaction_amount(self, currency: str, amount: float) -> None:
-        """Validate if the transaction amount meets minimum requirements.
+        """This method checks if the transaction amount meets the minimum required amount for the
+        specified currency. If the amount is below the minimum, it raises an exception.
 
         Args:
             currency: The currency code of the transaction
@@ -51,7 +55,8 @@ class PaymentGatewayController(ABC):
         """
 
     def request_for_payment(self, **kwargs) -> None:
-        """Request a payment via the payment gateway.
+        """This method is used to initiate a payment request. It typically involves preparing the
+        payment data and making an API call to the payment gateway to request the payment.
 
         Args:
             **kwargs: Payment details including:
@@ -65,7 +70,9 @@ class PaymentGatewayController(ABC):
         """
 
     def on_payment_request_submission(self, payment_request: dict[str, Any]) -> bool:
-        """Optional hook called when payment request is submitted.
+        """This method is called when a payment request is submitted. It processes the payment
+        data, validates it, and initiates the payment process, including creating a payment request
+        and handling the response from the payment gateway.
 
         Args:
             payment_request: Payment Request document
