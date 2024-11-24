@@ -8,12 +8,12 @@ from frappe.utils import call_hook_method, cint, flt, get_url
 
 from payments.utils import create_payment_gateway
 
-from payments.payment_gateways.doctype.izipay_settings.payment_gateway_controller import (
+from payments.payment_gateways.doctype.culqi_settings.payment_gateway_controller import (
     PaymentGatewayController,
 )
 
 
-class IzipaySettings(Document, PaymentGatewayController):
+class CulqiSettings(Document, PaymentGatewayController):
     supported_currencies = [
         "PEN",
         "USD",
@@ -38,22 +38,22 @@ class IzipaySettings(Document, PaymentGatewayController):
     def on_update(self):
         """
         Called when the document is updated. Creates a payment gateway and calls the hook method
-        'payment_gateway_enabled'. Validates the Izipay credentials if mandatory fields are not ignored.
+        'payment_gateway_enabled'. Validates the Culqi credentials if mandatory fields are not ignored.
         """
         create_payment_gateway(
-            "Izipay-" + self.gateway_name,
-            settings="Izipay Settings",
+            "Culqi-" + self.gateway_name,
+            settings="Culqi Settings",
             controller=self.gateway_name,
         )
-        call_hook_method("payment_gateway_enabled", gateway="Izipay-" + self.gateway_name)
+        call_hook_method("payment_gateway_enabled", gateway="Culqi-" + self.gateway_name)
         if not self.flags.ignore_mandatory:
-            self.validate_izipay_credentials()
+            self.validate_culqi_credentials()
 
     def validate_transaction_currency(self, currency: str):
         if currency not in self.supported_currencies:
             frappe.throw(
                 _(
-                    "Please select another payment method. Izipay does not support transactions in currency '{0}'"
+                    "Please select another payment method. Culqi does not support transactions in currency '{0}'"
                 ).format(currency)
             )
 
@@ -69,9 +69,9 @@ class IzipaySettings(Document, PaymentGatewayController):
     def get_payment_url(self, **kwargs) -> str:
         return get_url(f"./stripe_checkout?{urlencode(kwargs)}")
 
-    def validate_izipay_credentials(self):
+    def validate_culqi_credentials(self):
         # """
-        # Validates the Izipay credentials by making a GET request to the Izipay API.
+        # Validates the Culqi credentials by making a GET request to the Culqi API.
         # Throws an exception if the credentials are invalid.
         # """
         # if self.publishable_key and self.secret_key:
@@ -90,7 +90,7 @@ class IzipaySettings(Document, PaymentGatewayController):
 
     def create_request(self, data):
         """
-        Creates a payment request to Izipay.
+        Creates a payment request to Culqi.
 
         Args:
             data (dict): The payment data.
@@ -105,7 +105,7 @@ class IzipaySettings(Document, PaymentGatewayController):
         stripe.default_http_client = stripe.http_client.RequestsClient()
 
         try:
-            self.integration_request = create_request_log(self.data, service_name="Izipay")
+            self.integration_request = create_request_log(self.data, service_name="Culqi")
             return self.create_charge_on_stripe()
 
         except Exception:
@@ -122,7 +122,7 @@ class IzipaySettings(Document, PaymentGatewayController):
 
     def create_charge_on_stripe(self):
         """
-        Creates a charge on Izipay using the payment data.
+        Creates a charge on Culqi using the payment data.
 
         Returns:
             dict: The response containing the redirect URL and status.
@@ -143,7 +143,7 @@ class IzipaySettings(Document, PaymentGatewayController):
                 self.flags.status_changed_to = "Completed"
 
             else:
-                frappe.log_error(charge.failure_message, "Izipay Payment not completed")
+                frappe.log_error(charge.failure_message, "Culqi Payment not completed")
 
         except Exception:
             frappe.log_error(frappe.get_traceback())
