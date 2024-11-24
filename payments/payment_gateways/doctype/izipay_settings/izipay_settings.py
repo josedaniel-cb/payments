@@ -8,8 +8,12 @@ from frappe.utils import call_hook_method, cint, flt, get_url
 
 from payments.utils import create_payment_gateway
 
+from payments.payment_gateways.doctype.izipay_settings.payment_gateway_controller import (
+    PaymentGatewayController,
+)
 
-class IzipaySettings(Document):
+
+class IzipaySettings(Document, PaymentGatewayController):
     supported_currencies = [
         "PEN",
     ]
@@ -41,9 +45,29 @@ class IzipaySettings(Document):
         )
         call_hook_method("payment_gateway_enabled", gateway="Izipay-" + self.gateway_name)
         if not self.flags.ignore_mandatory:
-            self.validate_stripe_credentails()
+            self.validate_stripe_credentials()
 
-    def validate_stripe_credentails(self):
+    def validate_transaction_currency(self, currency: str):
+        if currency not in self.supported_currencies:
+            frappe.throw(
+                _(
+                    "Please select another payment method. Izipay does not support transactions in currency '{0}'"
+                ).format(currency)
+            )
+
+    def validate_minimum_transaction_amount(self, currency: str, amount: float):
+        if currency in self.currency_wise_minimum_charge_amount:
+            if flt(amount) < self.currency_wise_minimum_charge_amount.get(currency, 0.0):
+                frappe.throw(
+                    _("For currency {0}, the minimum transaction amount should be {1}").format(
+                        currency, self.currency_wise_minimum_charge_amount.get(currency, 0.0)
+                    )
+                )
+
+    def get_payment_url(self, **kwargs) -> str:
+        return get_url(f"./stripe_checkout?{urlencode(kwargs)}")
+
+    def validate_stripe_credentials(self):
         """
         Validates the Izipay credentials by making a GET request to the Izipay API.
         Throws an exception if the credentials are invalid.
@@ -58,47 +82,6 @@ class IzipaySettings(Document):
                 make_get_request(url="https://api.stripe.com/v1/charges", headers=header)
             except Exception:
                 frappe.throw(_("Seems Publishable Key or Secret Key is wrong !!!"))
-
-    def validate_transaction_currency(self, currency):
-        """
-        Validates if the given currency is supported by Izipay.
-        Throws an exception if the currency is not supported.
-
-        Args:
-            currency (str): The currency to validate.
-        """
-        if currency not in self.supported_currencies:
-            frappe.throw(
-                _(
-                    "Please select another payment method. Izipay does not support transactions in currency '{0}'"
-                ).format(currency)
-            )
-
-    def validate_minimum_transaction_amount(self, currency, amount):
-        """
-        Validates if the transaction amount meets the minimum charge amount for the given currency.
-        Throws an exception if the amount is less than the minimum required.
-
-        Args:
-            currency (str): The currency of the transaction.
-            amount (float): The transaction amount.
-        """
-        if currency in self.currency_wise_minimum_charge_amount:
-            if flt(amount) < self.currency_wise_minimum_charge_amount.get(currency, 0.0):
-                frappe.throw(
-                    _("For currency {0}, the minimum transaction amount should be {1}").format(
-                        currency, self.currency_wise_minimum_charge_amount.get(currency, 0.0)
-                    )
-                )
-
-    def get_payment_url(self, **kwargs):
-        """
-        Generates the payment URL with the given parameters.
-
-        Returns:
-            str: The payment URL.
-        """
-        return get_url(f"./stripe_checkout?{urlencode(kwargs)}")
 
     def create_request(self, data):
         """
