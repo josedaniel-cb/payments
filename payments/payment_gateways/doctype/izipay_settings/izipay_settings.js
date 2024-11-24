@@ -1,4 +1,4 @@
-frappe.ui.form.on('Stripe Settings', {
+frappe.ui.form.on('Izipay Settings', {
 	refresh: function(frm) {
 
 	}

@@ -280,7 +280,7 @@
  "modified": "2022-07-24 13:32:14.429916",
  "modified_by": "Administrator",
  "module": "Payment Gateways",
- "name": "Stripe Settings",
+ "name": "Izipay Settings",
  "name_case": "",
  "owner": "Administrator",
  "permissions": [

@@ -12,7 +12,7 @@ from frappe.utils import call_hook_method, cint, flt, get_url
 from payments.utils import create_payment_gateway
 
 
-class StripeSettings(Document):
+class IzipaySettings(Document):
 	supported_currencies = [
 		"PEN",
 	]
@@ -23,11 +23,11 @@ class StripeSettings(Document):
 
 	def on_update(self):
 		create_payment_gateway(
-			"Stripe-" + self.gateway_name,
-			settings="Stripe Settings",
+			"Izipay-" + self.gateway_name,
+			settings="Izipay Settings",
 			controller=self.gateway_name,
 		)
-		call_hook_method("payment_gateway_enabled", gateway="Stripe-" + self.gateway_name)
+		call_hook_method("payment_gateway_enabled", gateway="Izipay-" + self.gateway_name)
 		if not self.flags.ignore_mandatory:
 			self.validate_stripe_credentails()
 
@@ -47,7 +47,7 @@ class StripeSettings(Document):
 		if currency not in self.supported_currencies:
 			frappe.throw(
 				_(
-					"Please select another payment method. Stripe does not support transactions in currency '{0}'"
+					"Please select another payment method. Izipay does not support transactions in currency '{0}'"
 				).format(currency)
 			)
 
@@ -71,7 +71,7 @@ class StripeSettings(Document):
 		stripe.default_http_client = stripe.http_client.RequestsClient()
 
 		try:
-			self.integration_request = create_request_log(self.data, service_name="Stripe")
+			self.integration_request = create_request_log(self.data, service_name="Izipay")
 			return self.create_charge_on_stripe()
 
 		except Exception:
@@ -103,7 +103,7 @@ class StripeSettings(Document):
 				self.flags.status_changed_to = "Completed"
 
 			else:
-				frappe.log_error(charge.failure_message, "Stripe Payment not completed")
+				frappe.log_error(charge.failure_message, "Izipay Payment not completed")
 
 		except Exception:
 			frappe.log_error(frappe.get_traceback())
