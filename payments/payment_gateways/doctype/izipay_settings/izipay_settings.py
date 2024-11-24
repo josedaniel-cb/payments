@@ -21,6 +21,17 @@ class IzipaySettings(Document):
         "PEN": 1,
     }
 
+    def __init__(self, *args, **kwargs):
+        self.gateway_name: str
+        self.publishable_key: str
+        # self.column_break_3: str
+        self.secret_key: str
+        # self.section_break_5: str
+        # self.header_img: str
+        # self.column_break_7: str
+        self.redirect_url: str
+        super().__init__(*args, **kwargs)
+
     def on_update(self):
         create_payment_gateway(
             "Izipay-" + self.gateway_name,
@@ -138,6 +149,7 @@ class IzipaySettings(Document):
         else:
             redirect_url = "payment-failed"
 
+        redirect_url: str
         if redirect_to and "?" in redirect_url:
             redirect_url += "&" + urlencode({"redirect_to": redirect_to})
         else:
